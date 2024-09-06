@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e Spell Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: #f5f5f5;
+        }
+        main {
+            flex: 1 0 auto;
+            padding: 20px;
+        }
+        .spell-card {
+            margin-bottom: 10px;
+        }
+        .spell-level {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        #spell-details {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 300px;
+            display: none;
+        }
+        .spell-classes {
+            font-size: 0.8em;
+            color: #666;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <nav class="teal">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Spell Manager</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="row">
+            <div class="col s12 m6">
+                <h5>Available Spells</h5>
+                <div class="input-field">
+                    <select id="class-select">
+                        <option value="" disabled selected>Select a class</option>
+                    </select>
+                    <label>Class</label>
+                </div>
+                <div class="input-field">
+                    <select id="spell-level-select">
+                        <option value="all">All Levels</option>
+                        <option value="0">Cantrips</option>
+                        <option value="1">1st Level</option>
+                        <option value="2">2nd Level</option>
+                        <option value="3">3rd Level</option>
+                        <option value="4">4th Level</option>
+                        <option value="5">5th Level</option>
+                        <option value="6">6th Level</option>
+                        <option value="7">7th Level</option>
+                        <option value="8">8th Level</option>
+                        <option value="9">9th Level</option>
+                    </select>
+                    <label>Spell Level</label>
+                </div>
+                <div id="available-spells"></div>
+            </div>
+            <div class="col s12 m6">
+                <h5>My Spells</h5>
+                <div id="my-spells"></div>
+            </div>
+        </div>
+    </main>
+
+    <div id="spell-details" class="card">
+        <div class="card-content">
+            <span class="card-title" id="spell-name"></span>
+            <p id="spell-description"></p>
+            <p id="spell-classes"></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        // Placeholder for spell data
+        const spells = [
+{
+        "name": "Acid Splash",
+        "level": 0,
+        "classes": ["Artificer", "Sorcerer", "Wizard"],
+        "description": "You hurl a bubble of acid. Choose one creature within range, or choose two creatures within range that are within 5 feet of each other. A target must succeed on a Dexterity saving throw or take 1d6 acid damage."
+    },
+    {
+        "name": "Aid",
+        "level": 2,
+        "classes": ["Artificer", "Bard", "Cleric", "Paladin", "Ranger"],
+        "description": "Your spell bolsters your allies with toughness and resolve. Choose up to three creatures within range. Each target's hit point maximum and current hit points increase by 5 for the duration."
+    },
+    {
+        "name": "Alarm",
+        "level": 1,
+        "classes": ["Artificer", "Ranger", "Wizard"],
+        "description": "You set an alarm against unwanted intrusion. Choose a door, a window, or an area within range that is no larger than a 20-foot cube. Until the spell ends, an alarm alerts you whenever a Tiny or larger creature touches or enters the warded area."
+    },
+    {
+        "name": "Alter Self",
+        "level": 2,
+        "classes": ["Artificer", "Sorcerer", "Wizard"],
+        "description": "You assume a different form. When you cast the spell, choose one of the following options, the effects of which last for the duration of the spell. While the spell lasts, you can end one option as an action to gain the benefits of a different one."
+    },
+    {
+        "name": "Animal Friendship",
+        "level": 1,
+        "classes": ["Bard", "Druid", "Ranger"],
+        "description": "This spell lets you convince a beast that you mean it no harm. Choose a beast that you can see within range. It must see and hear you. If the beast's Intelligence is 4 or higher, the spell fails. Otherwise, the beast must succeed on a Wisdom saving throw or be charmed by you for the spell's duration."
+    },
+    {
+        "name": "Animal Messenger",
+        "level": 2,
+        "classes": ["Bard", "Druid", "Ranger"],
+        "description": "By means of this spell, you use an animal to deliver a message. Choose a Tiny beast you can see within range, such as a squirrel, a blue jay, or a bat. You specify a location, which you must have visited, and a recipient who matches a general description, such as 'a man or woman dressed in the uniform of the town guard' or 'a red-haired dwarf wearing a pointed hat.'"
+    },
+    {
+        "name": "Animal Shapes",
+        "level": 8,
+        "classes": ["Druid"],
+        "description": "Your magic turns others into beasts. Choose any number of willing creatures that you can see within range. You transform each target into the form of a Large or smaller beast with a challenge rating of 4 or lower."
+    },
+    {
+        "name": "Animate Dead",
+        "level": 3,
+        "classes": ["Cleric", "Wizard"],
+        "description": "This spell creates an undead servant. Choose a pile of bones or a corpse of a Medium or Small humanoid within range. Your spell imbues the target with a foul mimicry of life, raising it as an undead creature."
+    },
+    {
+        "name": "Animate Objects",
+        "level": 5,
+        "classes": ["Artificer", "Bard", "Sorcerer", "Wizard"],
+        "description": "Objects come to life at your command. Choose up to ten nonmagical objects within range that are not being worn or carried. Medium targets count as two objects, Large targets count as four objects, Huge targets count as eight objects."
+    },
+    {
+        "name": "Antilife Shell",
+        "level": 5,
+        "classes": ["Druid"],
+        "description": "A shimmering barrier extends out from you in a 10-foot radius and moves with you, remaining centered on you and hedging out creatures other than undead and constructs. The barrier lasts for the duration."
+    },
+{
+"name": "Antimagic Field",
+"level": 8,
+"classes": ["Cleric", "Wizard"],
+"description": "A 10-foot-radius invisible sphere of antimagic surrounds you. This area is divorced from the magical energy that suffuses the multiverse. Within the sphere, spells can't be cast, summoned creatures disappear, and even magic items become mundane."
+},
+{
+"name": "Antipathy/Sympathy",
+"level": 8,
+"classes": ["Bard", "Druid", "Wizard"],
+"description": "This spell attracts or repels creatures of your choice. You target something within range, either a Huge or smaller object or creature or an area that is no larger than a 200-foot cube. Then specify a kind of intelligent creature, such as red dragons, goblins, or vampires."
+},
+{
+"name": "Arcane Eye",
+"level": 4,
+"classes": ["Artificer", "Wizard"],
+"description": "You create an invisible, magical eye within range that hovers in the air for the duration. You mentally receive visual information from the eye, which has normal vision and darkvision out to 30 feet."
+},
+{
+"name": "Arcane Gate",
+"level": 6,
+"classes": ["Sorcerer", "Warlock", "Wizard"],
+"description": "You create linked teleportation portals that remain open for the duration. Choose two points on the ground that you can see, one point within 10 feet of you and one point within 500 feet of you."
+},
+{
+"name": "Arcane Lock",
+"level": 2,
+"classes": ["Artificer", "Wizard"],
+"description": "You touch a closed door, window, gate, chest, or other entryway, and it becomes locked for the duration. You and the creatures you designate when you cast this spell can open the object normally."
+},
+{
+    "name": "Armor of Agathys",
+    "level": 1,
+    "classes": ["Warlock"],
+    "description": "A protective magical force surrounds you, manifesting as a spectral frost that covers you and your gear. You gain 5 temporary hit points for the duration. If a creature hits you with a melee attack while you have these hit points, the creature takes 5 cold damage."
+},
+{
+    "name": "Arms of Hadar",
+    "level": 1,
+    "classes": ["Warlock"],
+    "description": "You invoke the power of Hadar, the Dark Hunger. Tendrils of dark energy erupt from you and batter all creatures within 10 feet of you. Each creature in that area must make a Strength saving throw."
+},
+{
+    "name": "Astral Projection",
+    "level": 9,
+    "classes": ["Cleric", "Warlock", "Wizard"],
+    "description": "You and up to eight willing creatures within range project your astral bodies into the Astral Plane. The material body you leave behind is unconscious and in a state of suspended animation; it doesn't need food or air and doesn't age."
+},
+{
+    "name": "Augury",
+    "level": 2,
+    "classes": ["Cleric"],
+    "description": "By casting gem-inlaid sticks, rolling dragon bones, laying out ornate cards, or employing some other divining tool, you receive an omen from an otherworldly entity about the results of a specific course of action that you plan to take within the next 30 minutes."
+},
+{
+    "name": "Aura of Life",
+    "level": 4,
+    "classes": ["Paladin"],
+    "description": "Life-preserving energy radiates from you in an aura with a 30-foot radius. Until the spell ends, the aura moves with you, centered on you. Each nonhostile creature in the aura (including you) has resistance to necrotic damage, and its hit point maximum can't be reduced."
+},
+{
+    "name": "Aura of Purity",
+    "level": 4,
+    "classes": ["Paladin"],
+    "description": "Purifying energy radiates from you in an aura with a 30-foot radius. Until the spell ends, the aura moves with you, centered on you. Each nonhostile creature in the aura (including you) can't become diseased, has resistance to poison damage, and has advantage on saving throws against effects that cause any of the following conditions: blinded, charmed, deafened, frightened, paralyzed, poisoned, and stunned."
+},
+{
+    "name": "Aura of Vitality",
+    "level": 3,
+    "classes": ["Paladin"],
+    "description": "Healing energy radiates from you in an aura with a 30-foot radius. Until the spell ends, the aura moves with you, centered on you. You can use a bonus action to cause one creature in the aura (including you) to regain 2d6 hit points."
+},
+{
+    "name": "Awaken",
+    "level": 5,
+    "classes": ["Bard", "Druid"],
+    "description": "After spending the casting time tracing magical pathways within a precious gemstone, you touch a Huge or smaller beast or plant. The target must have either no Intelligence score or an Intelligence of 3 or less. The target gains an Intelligence of 10. The target also gains the ability to speak one language you know."
+},
+{
+    "name": "Bane",
+    "level": 1,
+    "classes": ["Bard", "Cleric"],
+    "description": "Up to three creatures of your choice that you can see within range must make Charisma saving throws. Whenever a target that fails this saving throw makes an attack roll or a saving throw before the spell ends, the target must roll a d4 and subtract the number rolled from the attack roll or saving throw."
+},
+{
+    "name": "Banishing Smite",
+    "level": 5,
+    "classes": ["Paladin"],
+    "description": "The next time you hit a creature with a weapon attack before this spell ends, your weapon crackles with force, and the attack deals an extra 5d10 force damage to the target. Additionally, if this attack reduces the target to 50 hit points or fewer, you banish it."
+},
+{
+    "name": "Banishment",
+    "level": 4,
+    "classes": ["Cleric", "Paladin", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You attempt to send one creature that you can see within range to another plane of existence. The target must succeed on a Charisma saving throw or be banished."
+},
+{
+    "name": "Barkskin",
+    "level": 2,
+    "classes": ["Druid", "Ranger"],
+    "description": "You touch a willing creature. Until the spell ends, the target's skin has a rough, bark-like appearance, and the target's AC can't be less than 16, regardless of what kind of armor it is wearing."
+},
+{
+    "name": "Beacon of Hope",
+    "level": 3,
+    "classes": ["Cleric"],
+    "description": "This spell bestows hope and vitality. Choose any number of creatures within range. For the duration, each target has advantage on Wisdom saving throws and death saving throws, and regains the maximum number of hit points possible from any healing."
+},
+{
+    "name": "Beast Bond",
+    "level": 1,
+    "classes": ["Druid", "Ranger"],
+    "description": "You establish a telepathic link with one beast you touch that is friendly to you or charmed by you. The spell fails if the beast's Intelligence score is 4 or higher. Until the spell ends, the link is active while you and the beast are within line of sight of each other."
+},
+{
+    "name": "Beast Sense",
+    "level": 2,
+    "classes": ["Druid", "Ranger"],
+    "description": "You touch a willing beast. For the duration of the spell, you can use your action to see through the beast's eyes and hear what it hears, and continue to do so until you use your action to return to your normal senses."
+},
+{
+    "name": "Bestow Curse",
+    "level": 3,
+    "classes": ["Bard", "Cleric", "Wizard"],
+    "description": "You touch a creature, and that creature must succeed on a Wisdom saving throw or become cursed for the duration of the spell. When you cast this spell, choose the nature of the curse from the following options."
+},
+{
+    "name": "Bigby's Hand",
+    "level": 5,
+    "classes": ["Wizard"],
+    "description": "You create a Large hand of shimmering, translucent force in an unoccupied space that you can see within range. The hand lasts for the spell's duration, and it moves at your command, mimicking the movements of your own hand."
+},
+{
+    "name": "Blade Barrier",
+    "level": 6,
+    "classes": ["Cleric"],
+    "description": "You create a vertical wall of whirling, razor-sharp blades made of magical energy. The wall appears within range and lasts for the duration. You can make a straight wall up to 100 feet long, 20 feet high, and 5 feet thick, or a ringed wall up to 60 feet in diameter, 20 feet high, and 5 feet thick."
+},
+{
+    "name": "Blade Ward",
+    "level": 0,
+    "classes": ["Bard", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You extend your hand and trace a sigil of warding in the air. Until the end of your next turn, you have resistance against bludgeoning, piercing, and slashing damage dealt by weapon attacks."
+},
+{
+    "name": "Bless",
+    "level": 1,
+    "classes": ["Cleric", "Paladin"],
+    "description": "You bless up to three creatures of your choice within range. Whenever a target makes an attack roll or a saving throw before the spell ends, the target can roll a d4 and add the number rolled to the attack roll or saving throw."
+},
+{
+    "name": "Blight",
+    "level": 4,
+    "classes": ["Druid", "Sorcerer", "Warlock", "Wizard"],
+    "description": "Necromantic energy washes over a creature of your choice that you can see within range, draining moisture and vitality from it. The target must make a Constitution saving throw. The target takes 8d8 necrotic damage on a failed save, or half as much damage on a successful one."
+},
+{
+    "name": "Blinding Smite",
+    "level": 3,
+    "classes": ["Paladin"],
+    "description": "The next time you hit a creature with a melee weapon attack during this spell's duration, your weapon flares with bright light, and the attack deals an extra 3d8 radiant damage to the target. Additionally, the target must succeed on a Constitution saving throw or be blinded until the spell ends."
+},
+{
+    "name": "Blindness/Deafness",
+    "level": 2,
+    "classes": ["Bard", "Cleric", "Sorcerer", "Wizard"],
+    "description": "You can blind or deafen a foe. Choose one creature that you can see within range to make a Constitution saving throw. If it fails, the target is either blinded or deafened (your choice) for the duration. At the end of each of its turns, the target can make a Constitution saving throw. On a success, the spell ends."
+},
+{
+    "name": "Blink",
+    "level": 3,
+    "classes": ["Artificer", "Sorcerer", "Wizard"],
+    "description": "Roll a d20 at the end of each of your turns for the duration of the spell. On a roll of 11 or higher, you vanish from your current plane of existence and appear in the Ethereal Plane (the spell fails and the casting is wasted if you were already on that plane)."
+},
+{
+    "name": "Blur",
+    "level": 2,
+    "classes": ["Artificer", "Sorcerer", "Wizard"],
+    "description": "Your body becomes blurred, shifting and wavering to all who can see you. For the duration, any creature has disadvantage on attack rolls against you. An attacker is immune to this effect if it doesn't rely on sight, as with blindsight, or can see through illusions, as with truesight."
+},
+{
+    "name": "Branding Smite",
+    "level": 2,
+    "classes": ["Paladin"],
+    "description": "The next time you hit a creature with a weapon attack before this spell ends, the weapon gleams with astral radiance as you strike. The attack deals an extra 2d6 radiant damage to the target, which becomes visible if it's invisible, and the target sheds dim light in a 5-foot radius and can't become invisible until the spell ends."
+},
+{
+    "name": "Burning Hands",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "As you hold your hands with thumbs touching and fingers spread, a thin sheet of flames shoots forth from your outstretched fingertips. Each creature in a 15-foot cone must make a Dexterity saving throw. A creature takes 3d6 fire damage on a failed save, or half as much damage on a successful one."
+},
+{
+    "name": "Call Lightning",
+    "level": 3,
+    "classes": ["Druid"],
+    "description": "A storm cloud appears in the shape of a cylinder that is 10 feet tall with a 60-foot radius, centered on a point you can see within range directly above you. The spell fails if you can't see a point in the air where the storm cloud could appear (for example, if you are in a room that can't accommodate the cloud)."
+},
+{
+    "name": "Calm Emotions",
+    "level": 2,
+    "classes": ["Bard", "Cleric"],
+    "description": "You attempt to suppress strong emotions in a group of people. Each humanoid in a 20-foot-radius sphere centered on a point you choose within range must make a Charisma saving throw; a creature can choose to fail this saving throw if it wishes. If a creature fails its saving throw, choose one of the following two effects."
+},
+{
+    "name": "Chain Lightning",
+    "level": 6,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "You create a bolt of lightning that arcs toward a target of your choice that you can see within range. Three bolts then leap from that target to as many as three other targets, each of which must be within 30 feet of the first target. A target can be a creature or an object and can be targeted by only one of the bolts."
+},
+{
+    "name": "Charm Person",
+    "level": 1,
+    "classes": ["Bard", "Druid", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You attempt to charm a humanoid you can see within range. It must make a Wisdom saving throw, and does so with advantage if you or your companions are fighting it. If it fails the saving throw, it is charmed by you until the spell ends or until you or your companions do anything harmful to it."
+},
+{
+    "name": "Chill Touch",
+    "level": 0,
+    "classes": ["Sorcerer", "Warlock", "Wizard"],
+    "description": "You create a ghostly, skeletal hand in the space of a creature within range. Make a ranged spell attack against the creature to assail it with the chill of the grave. On a hit, the target takes 1d8 necrotic damage, and it can't regain hit points until the start of your next turn."
+},
+{
+    "name": "Chromatic Orb",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "You hurl a 4-inch-diameter sphere of energy at a creature that you can see within range. You choose acid, cold, fire, lightning, poison, or thunder for the type of orb you create, and then make a ranged spell attack against the target. If the attack hits, the creature takes 3d8 damage of the type you chose."
+},
+{
+    "name": "Circle of Death",
+    "level": 6,
+    "classes": ["Sorcerer", "Warlock", "Wizard"],
+    "description": "A sphere of negative energy ripples out in a 60-foot-radius sphere from a point within range. Each creature in that area must make a Constitution saving throw. A target takes 8d6 necrotic damage on a failed save, or half as much damage on a successful one."
+},
+{
+    "name": "Circle of Power",
+    "level": 5,
+    "classes": ["Paladin"],
+    "description": "Divine energy radiates from you, distorting and diffusing magical energy within 30 feet of you. Until the spell ends, the sphere moves with you, centered on you. For the duration, each friendly creature in the area (including you) has advantage on saving throws against spells and other magical effects."
+},
+{
+    "name": "Clairvoyance",
+    "level": 3,
+    "classes": ["Bard", "Cleric", "Sorcerer", "Wizard"],
+    "description": "You create an invisible sensor within range in a location familiar to you (a place you have visited or seen before) or in an obvious location that is unfamiliar to you (such as behind a door, around a corner, or in a grove of trees). The sensor remains in place for the duration, and it can't be attacked or otherwise interacted with."
+},
+{
+    "name": "Clone",
+    "level": 8,
+    "classes": ["Wizard"],
+    "description": "This spell grows an inert duplicate of a living, Medium creature as a safeguard against death. This clone forms inside a sealed vessel and grows to full size and maturity after 120 days; you can also choose to have the clone be a younger version of the same creature."
+},
+{
+    "name": "Cloud of Daggers",
+    "level": 2,
+    "classes": ["Bard", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You fill the air with spinning daggers in a cube 5 feet on each side, centered on a point you choose within range. A creature takes 4d4 slashing damage when it enters the spell's area for the first time on a turn or starts its turn there."
+},
+{
+    "name": "Cloudkill",
+    "level": 5,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "You create a 20-foot-radius sphere of poisonous, yellow-green fog centered on a point you choose within range. The fog spreads around corners. It lasts for the duration or until strong wind disperses the fog, ending the spell. Its area is heavily obscured."
+},
+{
+    "name": "Color Spray",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "A dazzling array of flashing, colored light springs from your hand. Roll 6d10; the total is how many hit points of creatures this spell can affect. Creatures in a 15-foot cone originating from you are affected in ascending order of their current hit points (ignoring unconscious creatures and creatures that can't see)."
+},
+  {
+    "name": "Command",
+    "level": 1,
+    "classes": ["Cleric", "Paladin"],
+    "description": "You speak a one-word command to a creature you can see within range. The target must succeed on a Wisdom saving throw or follow the command on its next turn. The spell has no effect if the target is undead, if it doesn't understand your language, or if your command is directly harmful to it."
+  },
+  {
+    "name": "Comprehend Languages",
+    "level": 1,
+    "classes": ["Bard", "Sorcerer", "Warlock", "Wizard"],
+    "description": "For the duration, you understand the literal meaning of any spoken language that you hear. You also understand any written language that you see, but you must be touching the surface on which the words are written. It takes about 1 minute to read one page of text."
+  },
+  {
+    "name": "Create or Destroy Water",
+    "level": 1,
+    "classes": ["Cleric", "Druid"],
+    "description": "You either create or destroy water. Create Water: You create up to 10 gallons of clean water within range in an open container. Alternatively, the water falls as rain in a 30-foot cube within range, extinguishing exposed flames in the area. Destroy Water: You destroy up to 10 gallons of water in an open container within range. Alternatively, you destroy fog in a 30-foot cube within range."
+  },
+  {
+    "name": "Cure Wounds",
+    "level": 1,
+    "classes": ["Bard", "Cleric", "Druid", "Paladin", "Ranger"],
+    "description": "A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs."
+  },
+  {
+    "name": "Detect Evil and Good",
+    "level": 1,
+    "classes": ["Cleric", "Paladin"],
+    "description": "For the duration, you know if there is an aberration, celestial, elemental, fey, fiend, or undead within 30 feet of you, as well as where the creature is located. Similarly, you know if there is a place or object within 30 feet of you that has been magically consecrated or desecrated."
+  },
+{
+    "name": "Detect Magic",
+    "level": 1,
+    "classes": ["Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Wizard"],
+    "description": "For the duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic, and you learn its school of magic, if any."
+  },
+  {
+    "name": "Detect Poison and Disease",
+    "level": 1,
+    "classes": ["Cleric", "Druid", "Paladin", "Ranger"],
+    "description": "For the duration, you can sense the presence and location of poisons, poisonous creatures, and diseases within 30 feet of you. You also identify the kind of poison, poisonous creature, or disease in each case."
+  },
+  {
+    "name": "Disguise Self",
+    "level": 1,
+    "classes": ["Bard", "Sorcerer", "Wizard"],
+    "description": "You make yourself – including your clothing, armor, weapons, and other belongings on your person – look different until the spell ends or until you use your action to dismiss it. You can seem 1 foot shorter or taller and can appear thin, fat, or in between. You can't change your body type, so you must adopt a form that has the same basic arrangement of limbs. Otherwise, the extent of the illusion is up to you."
+  },
+  {
+    "name": "Divine Favor",
+    "level": 1,
+    "classes": ["Paladin"],
+    "description": "Your prayer empowers you with divine radiance. Until the spell ends, your weapon attacks deal an extra 1d4 radiant damage on a hit."
+  },
+  {
+    "name": "Ensnaring Strike",
+    "level": 1,
+    "classes": ["Ranger"],
+    "description": "The next time you hit a creature with a weapon attack before this spell ends, a writhing mass of thorny vines appears at the point of impact, and the target must succeed on a Strength saving throw or be restrained by the magical vines until the spell ends. A Large or larger creature has advantage on this saving throw. If the target succeeds on the save, the vines shrivel away."
+  },
+{
+    "name": "Entangle",
+    "level": 1,
+    "classes": ["Druid"],
+    "description": "Grasping weeds and vines sprout from the ground in a 20-foot square starting from a point within range. For the duration, these plants turn the ground in the area into difficult terrain. A creature in the area when you cast the spell must succeed on a Strength saving throw or be restrained by the entangling plants until the spell ends."
+  },
+  {
+    "name": "Expeditious Retreat",
+    "level": 1,
+    "classes": ["Sorcerer", "Warlock", "Wizard"],
+    "description": "This spell allows you to move at an incredible pace. When you cast this spell, and then as a bonus action on each of your turns until the spell ends, you can take the Dash action."
+  },
+  {
+    "name": "Faerie Fire",
+    "level": 1,
+    "classes": ["Bard", "Druid"],
+    "description": "Each object in a 20-foot cube within range is outlined in blue, green, or violet light (your choice). Any creature in the area when the spell is cast is also outlined in light if it fails a Dexterity saving throw. For the duration, objects and affected creatures shed dim light in a 10-foot radius. Any attack roll against an affected creature or object has advantage if the attacker can see it, and the affected creature or object can't benefit from being invisible."
+  },
+  {
+    "name": "False Life",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "Bolstering yourself with a necromantic facsimile of life, you gain 1d4 + 4 temporary hit points for the duration."
+  },
+  {
+    "name": "Feather Fall",
+    "level": 1,
+    "classes": ["Bard", "Sorcerer", "Wizard"],
+    "description": "Choose up to five falling creatures within range. A falling creature's rate of descent slows to 60 feet per round until the spell ends. If the creature lands before the spell ends, it takes no falling damage and can land on its feet, and the spell ends for that creature."
+  },
+{
+    "name": "Find Familiar",
+    "level": 1,
+    "classes": ["Wizard"],
+    "description": "You gain the service of a familiar, a spirit that takes an animal form you choose: bat, cat, crab, frog (toad), hawk, lizard, octopus, owl, poisonous snake, fish (quipper), rat, raven, sea horse, spider, or weasel. Appearing in an unoccupied space within range, the familiar has the statistics of the chosen form, though it is a celestial, fey, or fiend (your choice) instead of a beast."
+  },
+  {
+    "name": "Fog Cloud",
+    "level": 1,
+    "classes": ["Druid", "Ranger", "Sorcerer", "Wizard"],
+    "description": "You create a 20-foot-radius sphere of fog centered on a point within range. The sphere spreads around corners, and its area is heavily obscured. It lasts for the duration or until a wind of moderate or greater speed (at least 10 miles per hour) disperses it."
+  },
+  {
+    "name": "Goodberry",
+    "level": 1,
+    "classes": ["Druid", "Ranger"],
+    "description": "Up to ten berries appear in your hand and are infused with magic for the duration. A creature can use its action to eat one berry. Eating a berry restores 1 hit point, and the berry provides enough nourishment to sustain a creature for one day."
+  },
+  {
+    "name": "Grease",
+    "level": 1,
+    "classes": ["Wizard"],
+    "description": "Slick grease covers the ground in a 10-foot square centered on a point within range and turns it into difficult terrain for the duration. When the grease appears, each creature standing in its area must succeed on a Dexterity saving throw or fall prone. A creature that enters the area or ends its turn there must also succeed on a Dexterity saving throw or fall prone."
+  },
+  {
+    "name": "Guiding Bolt",
+    "level": 1,
+    "classes": ["Cleric"],
+    "description": "A flash of light streaks toward a creature of your choice within range. Make a ranged spell attack against the target. On a hit, the target takes 4d6 radiant damage, and the next attack roll made against this target before the end of your next turn has advantage, thanks to the mystical dim light glittering on the target until then."
+  },
+{
+    "name": "Healing Word",
+    "level": 1,
+    "classes": ["Bard", "Cleric", "Druid"],
+    "description": "A creature of your choice that you can see within range regains hit points equal to 1d4 + your spellcasting ability modifier. This spell has no effect on undead or constructs."
+  },
+  {
+    "name": "Hellish Rebuke",
+    "level": 1,
+    "classes": ["Warlock"],
+    "description": "As a reaction in response to being damaged by a creature within 60 feet of you that you can see, you point your finger, and the creature that damaged you is momentarily surrounded by hellish flames. The creature must make a Dexterity saving throw. It takes 2d10 fire damage on a failed save, or half as much damage on a successful one."
+  },
+  {
+    "name": "Heroism",
+    "level": 1,
+    "classes": ["Bard", "Paladin"],
+    "description": "A willing creature you touch is imbued with bravery. Until the spell ends, the creature is immune to being frightened and gains temporary hit points equal to your spellcasting ability modifier at the start of each of its turns. When the spell ends, the target loses any remaining temporary hit points from this spell."
+  },
+  {
+    "name": "Hex",
+    "level": 1,
+    "classes": ["Warlock"],
+    "description": "You place a curse on a creature that you can see within range. Until the spell ends, you deal an extra 1d6 necrotic damage to the target whenever you hit it with an attack. Also, choose one ability when you cast the spell. The target has disadvantage on ability checks made with the chosen ability."
+  },
+  {
+    "name": "Hunter's Mark",
+    "level": 1,
+    "classes": ["Ranger"],
+    "description": "You choose a creature you can see within range and mystically mark it as your quarry. Until the spell ends, you deal an extra 1d6 damage to the target whenever you hit it with a weapon attack, and you have advantage on any Wisdom (Perception) or Wisdom (Survival) check you make to find it. If the target drops to 0 hit points before this spell ends, you can use a bonus action on a subsequent turn of yours to mark a new creature."
+  },
+{
+    "name": "Identify",
+    "level": 1,
+    "classes": ["Bard", "Wizard"],
+    "description": "You choose one object that you must touch throughout the casting of the spell. If it is a magic item or some other magic-imbued object, you learn its properties and how to use them, whether it requires attunement to use, and how many charges it has, if any. You learn whether any spells are affecting the item and what they are. If the item was created by a spell, you learn which spell created it."
+  },
+  {
+    "name": "Illusory Script",
+    "level": 1,
+    "classes": ["Bard", "Warlock", "Wizard"],
+    "description": "You write on parchment, paper, or some other suitable writing material and imbue it with a potent illusion that lasts for the duration. To you and any creatures you designate when you cast the spell, the writing appears normal, written in your hand, and conveys whatever meaning you intended when you wrote the text. To all others, the writing appears as if it were written in an unknown or magical script that is unintelligible."
+  },
+  {
+    "name": "Inflict Wounds",
+    "level": 1,
+    "classes": ["Cleric"],
+    "description": "Make a melee spell attack against a creature you can reach. On a hit, the target takes 3d10 necrotic damage."
+  },
+  {
+    "name": "Jump",
+    "level": 1,
+    "classes": ["Druid", "Ranger", "Sorcerer", "Wizard"],
+    "description": "You touch a creature. The creature's jump distance is tripled until the spell ends."
+  },
+  {
+    "name": "Longstrider",
+    "level": 1,
+    "classes": ["Bard", "Druid", "Ranger", "Wizard"],
+    "description": "You touch a creature. The target's speed increases by 10 feet until the spell ends."
+  },
+{
+    "name": "Mage Armor",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "You touch a willing creature who isn't wearing armor, and a protective magical force surrounds it until the spell ends. The target's base AC becomes 13 + its Dexterity modifier. The spell ends if the target dons armor or if you dismiss the spell as an action."
+  },
+  {
+    "name": "Magic Missile",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several."
+  },
+  {
+    "name": "Protection from Evil and Good",
+    "level": 1,
+    "classes": ["Cleric", "Paladin", "Warlock", "Wizard"],
+    "description": "Until the spell ends, one willing creature you touch is protected against certain types of creatures: aberrations, celestials, elementals, fey, fiends, and undead. The protection grants several benefits: Creatures of those types have disadvantage on attack rolls against the target. The target also can't be charmed, frightened, or possessed by them."
+  },
+  {
+    "name": "Purify Food and Drink",
+    "level": 1,
+    "classes": ["Cleric", "Druid", "Paladin"],
+    "description": "All nonmagical food and drink within a 5-foot-radius sphere centered on a point of your choice within range is purified and rendered free of poison and disease."
+  },
+  {
+    "name": "Sanctuary",
+    "level": 1,
+    "classes": ["Cleric"],
+    "description": "You ward a creature within range against attack. Until the spell ends, any creature who targets the warded creature with an attack or a harmful spell must first make a Wisdom saving throw. On a failed save, the creature must choose a new target or lose the attack or spell. This spell doesn't protect the warded creature from area effects, such as the explosion of a fireball."
+  },
+{
+    "name": "Shield",
+    "level": 1,
+    "classes": ["Sorcerer", "Wizard"],
+    "description": "An invisible barrier of magical force appears and protects you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile."
+  },
+  {
+    "name": "Shield of Faith",
+    "level": 1,
+    "classes": ["Cleric", "Paladin"],
+    "description": "A shimmering field appears and surrounds a creature of your choice within range, granting it a +2 bonus to AC for the duration."
+  },
+  {
+    "name": "Silent Image",
+    "level": 1,
+    "classes": ["Bard", "Sorcerer", "Wizard"],
+    "description": "You create the image of an object, a creature, or some other visible phenomenon that is no larger than a 15-foot cube. The image appears at a spot within range and lasts for the duration. The image is purely visual; it isn't accompanied by sound, smell, or other sensory effects."
+  },
+  {
+    "name": "Sleep",
+    "level": 1,
+    "classes": ["Bard", "Sorcerer", "Wizard"],
+    "description": "This spell sends creatures into a magical slumber. Roll 5d8; the total is how many hit points of creatures this spell can affect. Creatures within 20 feet of a point you choose within range are affected in ascending order of their current hit points (ignoring unconscious creatures)."
+  },
+  {
+    "name": "Speak with Animals",
+    "level": 1,
+    "classes": ["Bard", "Druid", "Ranger"],
+    "description": "You gain the ability to comprehend and verbally communicate with beasts for the duration. The knowledge and awareness of many beasts is limited by their intelligence, but at minimum, beasts can give you information about nearby locations and monsters, including whatever they can perceive or have perceived within the past day."
+  },
+{
+    "name": "Tasha's Hideous Laughter",
+    "level": 1,
+    "classes": ["Bard", "Wizard"],
+    "description": "A creature of your choice that you can see within range perceives everything as hilariously funny and falls into fits of laughter if this spell affects it. The target must succeed on a Wisdom saving throw or fall prone, becoming incapacitated and unable to stand up for the duration. A creature with an Intelligence score of 4 or less isn't affected."
+  },
+  {
+    "name": "Tensor's Floating Disk",
+    "level": 1,
+    "classes": ["Wizard"],
+    "description": "This spell creates a circular, horizontal plane of force, 3 feet in diameter and 1 inch thick, that floats 3 feet above the ground in an unoccupied space of your choice that you can see within range. The disk remains for the duration, and can hold up to 500 pounds. If more weight is placed on it, the spell ends, and everything on the disk falls to the ground."
+  },
+  {
+    "name": "Thunderwave",
+    "level": 1,
+    "classes": ["Bard", "Druid", "Sorcerer", "Wizard"],
+    "description": "A wave of thunderous force sweeps out from you. Each creature in a 15-foot cube originating from you must make a Constitution saving throw. On a failed save, a creature takes 2d8 thunder damage and is pushed 10 feet away from you. On a successful save, the creature takes half as much damage and isn't pushed."
+  },
+  {
+    "name": "Unseen Servant",
+    "level": 1,
+    "classes": ["Bard", "Warlock", "Wizard"],
+    "description": "This spell creates an invisible, mindless, shapeless force that performs simple tasks at your command until the spell ends. The servant can perform simple tasks that a human servant could do, such as fetching things, cleaning, mending, folding clothes, lighting fires, serving food, and pouring wine. Once you give the command, the servant performs the task to the best of its ability until it completes the task, then waits for your next command."
+  },
+  {
+    "name": "Witch Bolt",
+    "level": 1,
+    "classes": ["Sorcerer", "Warlock", "Wizard"],
+    "description": "A beam of crackling, blue energy lances out toward a creature within range, forming a sustained arc of lightning between you and the target. Make a ranged spell attack against that creature. On a hit, the target takes 1d12 lightning damage, and on each of your turns for the duration, you can use your action to deal 1d12 lightning damage to the target automatically."
+  },
+{
+    "name": "Green-Flame Blade",
+    "level": 0,
+    "classes": ["Artificer", "Sorcerer", "Warlock", "Wizard"],
+    "description": "As part of the action used to cast this spell, you must make a melee attack with a weapon against one creature within the spell's range, otherwise the spell fails. On a hit, the target suffers the attack's normal effects, and green fire leaps from the target to a different creature of your choice that you can see within 5 feet of it. The second creature takes fire damage equal to your spellcasting ability modifier."
+  },
+  {
+    "name": "Guidance",
+    "level": 0,
+    "classes": ["Cleric", "Druid"],
+    "description": "You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one ability check of its choice. It can roll the die before or after making the ability check. The spell then ends."
+  },
+  {
+    "name": "Gust",
+    "level": 0,
+    "classes": ["Druid", "Sorcerer", "Wizard"],
+    "description": "You seize the air and compel it to create one of the following effects at a point you can see within range: One Medium or smaller creature that you choose must succeed on a Strength saving throw or be pushed up to 5 feet away from you."
+  },
+  {
+    "name": "Infestation",
+    "level": 0,
+    "classes": ["Druid", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You cause a cloud of mites, fleas, and other parasites to appear momentarily on one creature you can see within range. The target must succeed on a Constitution saving throw, or it takes 1d6 poison damage and moves 5 feet in a random direction if it can move and its speed is at least 5 feet. Roll a d4 for the direction: 1, north; 2, south; 3, east; or 4, west."
+  },
+  {
+    "name": "Light",
+    "level": 0,
+    "classes": ["Artificer", "Bard", "Cleric", "Sorcerer", "Wizard"],
+    "description": "You touch one object that is no larger than 10 feet in any dimension. Until the spell ends, the object sheds bright light in a 20-foot radius and dim light for an additional 20 feet. The light can be colored as you like. Completely covering the object with something opaque blocks the light. The spell ends if you cast it again or dismiss it as an action."
+  },
+{
+    "name": "Lightning Lure",
+    "level": 0,
+    "classes": ["Artificer", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You create a lash of lightning energy that strikes at one creature of your choice that you can see within range. The target must succeed on a Strength saving throw or be pulled up to 10 feet in a straight line toward you and then take 1d8 lightning damage if it is within 5 feet of you."
+  },
+  {
+    "name": "Magic Stone",
+    "level": 0,
+    "classes": ["Artificer", "Druid", "Warlock"],
+    "description": "You touch one to three pebbles and imbue them with magic. You or someone else can make a ranged spell attack with one of the pebbles by throwing it or hurling it with a sling. If thrown, it has a range of 60 feet. If someone else attacks with the pebble, that attacker adds your spellcasting ability modifier, not the attacker's, to the attack roll. On a hit, the target takes bludgeoning damage equal to 1d6 + your spellcasting ability modifier."
+  },
+  {
+    "name": "Mending",
+    "level": 0,
+    "classes": ["Artificer", "Bard", "Cleric", "Druid", "Sorcerer", "Wizard"],
+    "description": "This spell repairs a single break or tear in an object you touch, such as a broken chain link, two halves of a broken key, a torn cloak, or a leaking wineskin. As long as the break or tear is no larger than 1 foot in any dimension, you mend it, leaving no trace of the former damage."
+  },
+  {
+    "name": "Message",
+    "level": 0,
+    "classes": ["Artificer", "Bard", "Sorcerer", "Wizard"],
+    "description": "You point your finger toward a creature within range and whisper a message. The target (and only the target) hears the message and can reply in a whisper that only you can hear. You can cast this spell through solid objects if you are familiar with the target and know it is beyond the barrier. Magical silence, 1 foot of stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood blocks the spell. The spell doesn't have to follow a straight line and can travel freely around corners or through openings."
+  },
+  {
+    "name": "Mind Sliver",
+    "level": 0,
+    "classes": ["Sorcerer", "Warlock", "Wizard"],
+    "description": "You drive a disorienting spike of psychic energy into the mind of one creature you can see within range. The target must succeed on an Intelligence saving throw or take 1d6 psychic damage and subtract 1d4 from the next saving throw it makes before the end of your next turn."
+  },
+{
+    "name": "Minor Illusion",
+    "level": 0,
+    "classes": ["Bard", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You create a sound or an image of an object within range that lasts for the duration. The illusion also ends if you dismiss it as an action or cast this spell again. If you create a sound, its volume can range from a whisper to a scream. If you create an image of an object, it must be no larger than a 5-foot cube."
+  },
+  {
+    "name": "Mold Earth",
+    "level": 0,
+    "classes": ["Druid", "Sorcerer", "Wizard"],
+    "description": "You choose a portion of dirt or stone that you can see within range and that fits within a 5-foot cube. You manipulate it in one of the following ways: If you target an area of loose earth, you can instantaneously excavate it, move it along the ground, and deposit it up to 5 feet away."
+  },
+  {
+    "name": "Poison Spray",
+    "level": 0,
+    "classes": ["Druid", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You extend your hand toward a creature you can see within range and project a puff of noxious gas from your palm. The creature must succeed on a Constitution saving throw or take 1d12 poison damage."
+  },
+  {
+    "name": "Prestidigitation",
+    "level": 0,
+    "classes": ["Artificer", "Bard", "Sorcerer", "Warlock", "Wizard"],
+    "description": "This spell is a minor magical trick that novice spellcasters use for practice. You create one of the following magical effects within range: You create an instantaneous, harmless sensory effect, such as a shower of sparks, a puff of wind, faint musical notes, or an odd odor."
+  },
+  {
+    "name": "Primal Savagery",
+    "level": 0,
+    "classes": ["Druid"],
+    "description": "You channel primal magic to cause your teeth or fingernails to sharpen, ready to deliver a corrosive attack. Make a melee spell attack against one creature within 5 feet of you. On a hit, the target takes 1d10 acid damage. After you make the attack, your teeth or fingernails return to normal."
+  },
+{
+    "name": "Produce Flame",
+    "level": 0,
+    "classes": ["Druid"],
+    "description": "A flickering flame appears in your hand. The flame remains there for the duration and harms neither you nor your equipment. The flame sheds bright light in a 10-foot radius and dim light for an additional 10 feet. The spell ends if you dismiss it as an action or if you cast it again."
+  },
+  {
+    "name": "Ray of Frost",
+    "level": 0,
+    "classes": ["Artificer", "Sorcerer", "Wizard"],
+    "description": "A frigid beam of blue-white light streaks toward a creature within range. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn."
+  },
+  {
+    "name": "Resistance",
+    "level": 0,
+    "classes": ["Cleric", "Druid"],
+    "description": "You touch one willing creature. Once before the spell ends, the target can roll a d4 and add the number rolled to one saving throw of its choice. It can roll the die before or after making the saving throw. The spell then ends."
+  },
+  {
+    "name": "Sacred Flame",
+    "level": 0,
+    "classes": ["Cleric"],
+    "description": "Flame-like radiance descends on a creature that you can see within range. The target must succeed on a Dexterity saving throw or take 1d8 radiant damage. The target gains no benefit from cover for this saving throw."
+  },
+  {
+    "name": "Shape Water",
+    "level": 0,
+    "classes": ["Druid", "Sorcerer", "Wizard"],
+    "description": "You choose an area of water that you can see within range and that fits within a 5-foot cube. You manipulate it in one of the following ways: You instantaneously move or otherwise change the flow of the water as you direct, up to 5 feet in any direction. This movement doesn't have enough force to cause damage."
+  },
+{
+    "name": "Shillelagh",
+    "level": 0,
+    "classes": ["Druid"],
+    "description": "The wood of a club or quarterstaff you are holding is imbued with nature's power. For the duration, you can use your spellcasting ability instead of Strength for the attack and damage rolls of melee attacks using that weapon, and the weapon's damage die becomes a d8. The weapon also becomes magical, if it isn't already. The spell ends if you cast it again or if you let go of the weapon."
+  },
+  {
+    "name": "Shocking Grasp",
+    "level": 0,
+    "classes": ["Artificer", "Sorcerer", "Wizard"],
+    "description": "Lightning springs from your hand to deliver a shock to a creature you try to touch. Make a melee spell attack against the target. You have advantage on the attack roll if the target is wearing armor made of metal. On a hit, the target takes 1d8 lightning damage, and it can't take reactions until the start of its next turn."
+  },
+  {
+    "name": "Spare the Dying",
+    "level": 0,
+    "classes": ["Artificer", "Cleric"],
+    "description": "You touch a living creature that has 0 hit points. The creature becomes stable. This spell has no effect on undead or constructs."
+  },
+  {
+    "name": "Sword Burst",
+    "level": 0,
+    "classes": ["Artificer", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You create a momentary circle of spectral blades that sweep around you. Each creature within 5 feet of you other than you must succeed on a Dexterity saving throw or take 1d6 force damage."
+  },
+  {
+    "name": "Thaumaturgy",
+    "level": 0,
+    "classes": ["Cleric"],
+    "description": "You manifest a minor wonder, a sign of supernatural power, within range. You create one of the following magical effects within range: Your voice booms up to three times as loud as normal for 1 minute. You cause flames to flicker, brighten, dim, or change color for 1 minute. You cause harmless tremors in the ground for 1 minute."
+  },
+{
+    "name": "Thorn Whip",
+    "level": 0,
+    "classes": ["Artificer", "Druid"],
+    "description": "You create a long, vine-like whip covered in thorns that lashes out at your command toward a creature in range. Make a melee spell attack against the target. If the attack hits, the creature takes 1d6 piercing damage, and if the creature is Large or smaller, you pull the creature up to 10 feet closer to you."
+  },
+  {
+    "name": "Toll the Dead",
+    "level": 0,
+    "classes": ["Cleric", "Warlock", "Wizard"],
+    "description": "You point at one creature you can see within range, and the sound of a dolorous bell fills the air around it for a moment. The target must succeed on a Wisdom saving throw or take 1d8 necrotic damage. If the target is missing any of its hit points, it instead takes 1d12 necrotic damage."
+  },
+  {
+    "name": "True Strike",
+    "level": 0,
+    "classes": ["Bard", "Sorcerer", "Warlock", "Wizard"],
+    "description": "You extend your hand and point a finger at a target in range. Your magic grants you a brief insight into the target's defenses. On your next turn, you gain advantage on your first attack roll against the target, provided that this spell hasn't ended."
+  },
+  {
+    "name": "Vicious Mockery",
+    "level": 0,
+    "classes": ["Bard"],
+    "description": "You unleash a string of insults laced with subtle enchantments at a creature you can see within range. If the target can hear you (though it need not understand you), it must succeed on a Wisdom saving throw or take 1d4 psychic damage and have disadvantage on the next attack roll it makes before the end of its next turn."
+  },
+  {
+    "name": "Word of Radiance",
+    "level": 0,
+    "classes": ["Cleric"],
+    "description": "You utter a divine word, and burning radiance erupts from you. Each creature of your choice that you can see within range must succeed on a Constitution saving throw or take 1d6 radiant damage."
+  },
+
+];
+
+        const classes = ["Arcane Trickster", "Bard", "Cleric", "Druid", "Paladin", "Ranger", "Sorcerer", "Warlock", "Wizard"];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSelects();
+            populateAvailableSpells();
+            setupEventListeners();
+        });
+
+        function initializeSelects() {
+            const classSelect = document.getElementById('class-select');
+            classes.forEach(cls => {
+                const option = document.createElement('option');
+                option.value = cls;
+                option.textContent = cls;
+                classSelect.appendChild(option);
+            });
+
+            M.FormSelect.init(document.querySelectorAll('select'));
+        }
+
+        function populateAvailableSpells() {
+            const availableSpellsDiv = document.getElementById('available-spells');
+            const selectedClass = document.getElementById('class-select').value;
+            const selectedLevel = document.getElementById('spell-level-select').value;
+
+            availableSpellsDiv.innerHTML = '';
+
+            spells.forEach(spell => {
+                if ((selectedClass === '' || spell.classes.includes(selectedClass)) &&
+                    (selectedLevel === 'all' || spell.level.toString() === selectedLevel)) {
+                    const spellCard = document.createElement('div');
+                    spellCard.className = 'spell-card card-panel';
+                    spellCard.innerHTML = `
+                        <span>${spell.name}</span>
+                        <span class="spell-classes">${spell.classes.join(', ')}</span>
+                        <a class="btn-floating btn-small waves-effect waves-light right" onclick="addSpell('${spell.name}')">
+                            <i class="material-icons">add</i>
+                        </a>
+                    `;
+                    spellCard.addEventListener('click', () => showSpellDetails(spell));
+                    availableSpellsDiv.appendChild(spellCard);
+                }
+            });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('class-select').addEventListener('change', populateAvailableSpells);
+            document.getElementById('spell-level-select').addEventListener('change', populateAvailableSpells);
+        }
+
+        function addSpell(spellName) {
+            const mySpellsDiv = document.getElementById('my-spells');
+            const spell = spells.find(s => s.name === spellName);
+            
+            if (spell) {
+                const spellCard = document.createElement('div');
+                spellCard.className = 'spell-card card-panel';
+                spellCard.innerHTML = `
+                    <span>${spell.name}</span>
+                    <span class="spell-classes">${spell.classes.join(', ')}</span>
+                    <a class="btn-floating btn-small waves-effect waves-light red right" onclick="removeSpell(this)">
+                        <i class="material-icons">remove</i>
+                    </a>
+                `;
+                mySpellsDiv.appendChild(spellCard);
+            }
+        }
+
+        function removeSpell(element) {
+            element.closest('.spell-card').remove();
+        }
+
+        function showSpellDetails(spell) {
+            const detailsDiv = document.getElementById('spell-details');
+            document.getElementById('spell-name').textContent = spell.name;
+            document.getElementById('spell-description').textContent = spell.description;
+            document.getElementById('spell-classes').textContent = `Classes: ${spell.classes.join(', ')}`;
+            detailsDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

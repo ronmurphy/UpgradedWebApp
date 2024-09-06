@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D 5e Character Creator - Ability Scores</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body { 
+            display: flex; 
+            min-height: 100vh; 
+            flex-direction: column; 
+            background-color: #f5f5f5;
+        }
+        main { 
+            flex: 1 0 auto; 
+            padding-bottom: 70px;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            background-color: #26a69a;
+            padding: 10px 0;
+        }
+        .bottom-nav a {
+            color: white;
+            text-align: center;
+        }
+        .bottom-nav i {
+            font-size: 24px;
+        }
+        .selection-area {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .selection-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .ability-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .ability-score input {
+            width: 50px;
+            text-align: center;
+        }
+        .method-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 10px;
+        }
+        .btn-small {
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <h4 class="center-align">Create Your Character</h4>
+        <div class="selection-area">
+            <div class="selection-title">Step 2: Ability Scores</div>
+            <div class="input-field">
+                <select id="generation-method" class="browser-default">
+                    <option value="" disabled selected>Choose generation method</option>
+                    <option value="pointBuy">Point Buy</option>
+                    <option value="standardArray">Standard Array</option>
+                    <option value="rollDice">Roll 4d6, drop lowest</option>
+                </select>
+            </div>
+            <p id="method-description" class="method-description"></p>
+            <div id="ability-scores-container"></div>
+            <button id="generate-scores" class="btn waves-effect waves-light" style="display: none;">Generate Scores</button>
+            <p id="points-remaining"></p>
+        </div>
+    </main>
+
+    <div class="bottom-nav">
+        <a href="#" onclick="goToStep(1)"><i class="material-icons">looks_one</i><br>Race & Class</a>
+        <a href="#" class="active"><i class="material-icons">looks_two</i><br>Abilities</a>
+        <a href="#" class="disabled"><i class="material-icons">looks_3</i><br>Background</a>
+        <a href="#" class="disabled"><i class="material-icons">looks_4</i><br>Equipment</a>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        const abilities = ['Strength', 'Dexterity', 'Constitution', 'Intelligence', 'Wisdom', 'Charisma'];
+        const standardArray = [15, 14, 13, 12, 10, 8];
+        let pointBuyPoints = 27;
+        let currentMethod = '';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const methodSelect = document.getElementById('generation-method');
+            const methodDescription = document.getElementById('method-description');
+            const generateButton = document.getElementById('generate-scores');
+            const abilityScoresContainer = document.getElementById('ability-scores-container');
+
+            methodSelect.addEventListener('change', function() {
+                currentMethod = this.value;
+                updateMethodDescription(currentMethod);
+                setupAbilityScores(currentMethod);
+            });
+
+            generateButton.addEventListener('click', function() {
+                if (currentMethod === 'rollDice') {
+                    rollAbilityScores();
+                }
+            });
+        });
+
+        function updateMethodDescription(method) {
+            const descriptions = {
+                pointBuy: "Distribute 27 points among your abilities. Scores can't go below 8 or above 15 before racial modifiers.",
+                standardArray: "Assign the following scores to your abilities: 15, 14, 13, 12, 10, 8",
+                rollDice: "Roll 4d6, drop the lowest die, and sum the remaining three. Do this six times and assign as desired."
+            };
+            document.getElementById('method-description').textContent = descriptions[method];
+        }
+
+        function setupAbilityScores(method) {
+            const container = document.getElementById('ability-scores-container');
+            container.innerHTML = '';
+            document.getElementById('generate-scores').style.display = method === 'rollDice' ? 'block' : 'none';
+
+            abilities.forEach(ability => {
+                const div = document.createElement('div');
+                div.className = 'ability-score';
+                div.innerHTML = `
+                    <span>${ability}</span>
+                    <div>
+                        <button class="btn-small waves-effect waves-light" onclick="adjustScore('${ability}', -1)">-</button>
+                        <input type="number" id="${ability.toLowerCase()}" value="8" min="8" max="15" readonly>
+                        <button class="btn-small waves-effect waves-light" onclick="adjustScore('${ability}', 1)">+</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            if (method === 'standardArray') {
+                abilities.forEach((ability, index) => {
+                    document.getElementById(ability.toLowerCase()).value = standardArray[index];
+                });
+            } else if (method === 'pointBuy') {
+                updatePointsRemaining();
+            }
+        }
+
+        function adjustScore(ability, change) {
+            if (currentMethod !== 'pointBuy') return;
+            
+            const input = document.getElementById(ability.toLowerCase());
+            let currentValue = parseInt(input.value);
+            let newValue = currentValue + change;
+
+            if (newValue >= 8 && newValue <= 15) {
+                let pointCost = getPointCost(currentValue, newValue);
+                if (pointBuyPoints - pointCost >= 0 || change < 0) {
+                    input.value = newValue;
+                    pointBuyPoints -= pointCost;
+                    updatePointsRemaining();
+                }
+            }
+        }
+
+        function getPointCost(oldValue, newValue) {
+            const costs = {8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9};
+            return costs[newValue] - costs[oldValue];
+        }
+
+        function updatePointsRemaining() {
+            document.getElementById('points-remaining').textContent = `Points remaining: ${pointBuyPoints}`;
+        }
+
+        function rollAbilityScores() {
+            abilities.forEach(ability => {
+                let rolls = Array.from({length: 4}, () => Math.floor(Math.random() * 6) + 1);
+                rolls.sort((a, b) => b - a);
+                let total = rolls.slice(0, 3).reduce((sum, roll) => sum + roll, 0);
+                document.getElementById(ability.toLowerCase()).value = total;
+            });
+        }
+
+        function goToStep(step) {
+            // Implement navigation between steps
+            console.log(`Going to step ${step}`);
+        }
+    </script>
+</body>
+</html>
